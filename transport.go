@@ -58,7 +58,9 @@ func (t Transport) ReadStatus() (status ReplyStatus, err error) {
 }
 
 func (t Transport) ReadAll() (raw []byte, err error) {
-	return ioutil.ReadAll(t.sock)
+	raw, err = ioutil.ReadAll(t.sock)
+	debugLog(fmt.Sprintf("\r%s", raw))
+	return
 }
 
 func (t Transport) Recv() (msg []byte, err error) {

@@ -92,7 +92,7 @@ func Test_Transport(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = transport.Send("host:connect:localhost:6790")
+	err = transport.Send("host:connect:192.168.1.28:5555")
 	if err != nil {
 		t.Fatal(err)
 	}
