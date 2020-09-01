@@ -38,9 +38,9 @@ func NewClientWith(host string, port ...int) (adbClient Client, err error) {
 	return
 }
 
-func (c Client) executeCommand(command string, justReadStatus ...bool) (raw []byte, err error) {
-	if len(justReadStatus) == 0 {
-		justReadStatus = []bool{false}
+func (c Client) executeCommand(command string, onlyReadStatus ...bool) (raw []byte, err error) {
+	if len(onlyReadStatus) == 0 {
+		onlyReadStatus = []bool{false}
 	}
 	var transport Transport
 	if transport, err = newTransport(fmt.Sprintf("%s:%d", c.host, c.port)); err != nil {
@@ -52,7 +52,7 @@ func (c Client) executeCommand(command string, justReadStatus ...bool) (raw []by
 		return nil, err
 	}
 
-	if justReadStatus[0] {
+	if onlyReadStatus[0] {
 		if _, err = transport.ReadStatus(); err != nil {
 			return nil, err
 		}
