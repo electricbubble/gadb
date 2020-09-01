@@ -7,6 +7,7 @@ import (
 )
 
 const AdbServerPort = 5037
+const AdbDaemonPort = 5555
 
 type Client struct {
 	host string
@@ -126,15 +127,66 @@ func (c Client) DeviceList() (devices []Device, err error) {
 		}
 
 		devices = append(devices, Device{adbClient: c, serial: fields[0], attrs: attrs})
-
-		// for j := range fields {
-		// 	fmt.Print(fields[j], "\t")
-		// }
-		// fmt.Print("\b")
-		// fmt.Println()
 	}
-	// fmt.Println()
 
+	return
+}
+
+func (c Client) ForwardList() (string, error) {
+	var raw []byte
+	var err error
+	if raw, err = c.executeCommand("host:list-forward"); err != nil {
+		return "", err
+	}
+	return string(raw), nil
+}
+
+func (c Client) ForwardKillAll() (err error) {
+	_, err = c.executeCommand("host:killforward-all", true)
+	return
+}
+
+func (c Client) Connect(ip string, port ...int) (err error) {
+	if len(port) == 0 {
+		port = []int{AdbDaemonPort}
+	}
+
+	var raw []byte
+	if raw, err = c.executeCommand(fmt.Sprintf("host:connect:%s:%d", ip, port[0])); err != nil {
+		return err
+	}
+	if !strings.HasPrefix(string(raw), "connected to") && !strings.HasPrefix(string(raw), "already connected to") {
+		return fmt.Errorf("adb connect: %s", raw)
+	}
+	return
+}
+
+func (c Client) Disconnect(ip string, port ...int) (err error) {
+	cmd := fmt.Sprintf("host:disconnect:%s", ip)
+	if len(port) != 0 {
+		cmd = fmt.Sprintf("host:disconnect:%s:%d", ip, port[0])
+	}
+
+	var raw []byte
+	if raw, err = c.executeCommand(cmd); err != nil {
+		return err
+	}
+
+	if !strings.HasPrefix(string(raw), "disconnected") {
+		return fmt.Errorf("adb disconnect: %s", raw)
+	}
+	return
+}
+
+func (c Client) DisconnectAll() (err error) {
+	var raw []byte
+	if raw, err = c.executeCommand("host:disconnect:"); err != nil {
+		return err
+	}
+
+	if !strings.HasPrefix(string(raw), "disconnected everything") {
+		return fmt.Errorf("adb disconnect all: %s", raw)
+	}
 	return
 }
 
