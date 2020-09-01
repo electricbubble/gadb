@@ -111,7 +111,11 @@ func (d Device) ForwardKill(localPort int) (err error) {
 	return
 }
 
-func (d Device) executeCommand(command string) (raw []byte, err error) {
+func (d Device) executeCommand(command string, onlyReadStatus ...bool) (raw []byte, err error) {
+	if len(onlyReadStatus) == 0 {
+		onlyReadStatus = []bool{false}
+	}
+
 	var transport Transport
 	if transport, err = newTransport(fmt.Sprintf("%s:%d", d.adbClient.host, d.adbClient.port)); err != nil {
 		return nil, err
@@ -128,8 +132,12 @@ func (d Device) executeCommand(command string) (raw []byte, err error) {
 	if err = transport.Send(command); err != nil {
 		return nil, err
 	}
-	if _, err = transport.ReadStatus(); err != nil {
-		return nil, err
+
+	if onlyReadStatus[0] {
+		if _, err = transport.ReadStatus(); err != nil {
+			return nil, err
+		}
+		return
 	}
 
 	raw, err = transport.ReadAll()
@@ -148,4 +156,14 @@ func (d Device) RunShellCommand(cmd string, args ...string) (string, error) {
 		return "", err
 	}
 	return string(raw), nil
+}
+
+func (d Device) EnableAdbOverTCP(port ...int) (err error) {
+	if len(port) == 0 {
+		port = []int{AdbDaemonPort}
+	}
+
+	_, err = d.executeCommand(fmt.Sprintf("tcpip:%d", port[0]), true)
+
+	return
 }

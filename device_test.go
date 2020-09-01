@@ -207,3 +207,24 @@ func TestDevice_RunShellCommand(t *testing.T) {
 	}
 
 }
+
+func TestDevice_EnableAdbOverTCP(t *testing.T) {
+	adbClient, err := NewClient()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	devices, err := adbClient.DeviceList()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	dev := devices[len(devices)-1]
+
+	SetDebug(true)
+
+	err = dev.EnableAdbOverTCP()
+	if err != nil {
+		t.Fatal(err)
+	}
+}
