@@ -3,8 +3,24 @@ package gadb
 import (
 	"errors"
 	"fmt"
+	"io"
+	"os"
 	"strings"
+	"time"
 )
+
+type DeviceFileInfo struct {
+	Name         string
+	Mode         os.FileMode
+	Size         uint32
+	LastModified time.Time
+}
+
+func (info DeviceFileInfo) IsDir() bool {
+	return (info.Mode & (1 << 14)) == (1 << 14)
+}
+
+const DefaultFileMode = os.FileMode(0664)
 
 type DeviceState string
 
@@ -180,5 +196,83 @@ func (d Device) executeCommand(command string, onlyVerifyResponse ...bool) (raw 
 	}
 
 	raw, err = tp.ReadBytesAll()
+	return
+}
+
+func (d Device) List(remotePath string) (devFileInfos []DeviceFileInfo, err error) {
+	var tp transport
+	if tp, err = d.createDeviceTransport(); err != nil {
+		return nil, err
+	}
+	defer func() { _ = tp.Close() }()
+
+	var sync syncTransport
+	if sync, err = tp.CreateSyncTransport(); err != nil {
+		return nil, err
+	}
+	defer func() { _ = sync.Close() }()
+
+	if err = sync.Send("LIST", remotePath); err != nil {
+		return nil, err
+	}
+
+	devFileInfos = make([]DeviceFileInfo, 0)
+
+	var entry DeviceFileInfo
+	for entry, err = sync.ReadDirectoryEntry(); err == nil; entry, err = sync.ReadDirectoryEntry() {
+		if entry == (DeviceFileInfo{}) {
+			break
+		}
+		devFileInfos = append(devFileInfos, entry)
+	}
+
+	return
+}
+
+func (d Device) PushFile(local *os.File, remotePath string, modification ...time.Time) (err error) {
+	if len(modification) == 0 {
+		var stat os.FileInfo
+		if stat, err = local.Stat(); err != nil {
+			return err
+		}
+		modification = []time.Time{stat.ModTime()}
+	}
+
+	return d.Push(local, remotePath, modification[0], DefaultFileMode)
+}
+
+func (d Device) Push(source io.Reader, remotePath string, modification time.Time, mode ...os.FileMode) (err error) {
+	if len(mode) == 0 {
+		mode = []os.FileMode{DefaultFileMode}
+	}
+
+	var tp transport
+	if tp, err = d.createDeviceTransport(); err != nil {
+		return err
+	}
+	defer func() { _ = tp.Close() }()
+
+	var sync syncTransport
+	if sync, err = tp.CreateSyncTransport(); err != nil {
+		return err
+	}
+	defer func() { _ = sync.Close() }()
+
+	data := fmt.Sprintf("%s,%d", remotePath, mode[0])
+	if err = sync.Send("SEND", data); err != nil {
+		return err
+	}
+
+	if err = sync.SendStream(source); err != nil {
+		return
+	}
+
+	if err = sync.SendStatus("DONE", uint32(modification.Unix())); err != nil {
+		return
+	}
+
+	if err = sync.VerifyStatus(); err != nil {
+		return
+	}
 	return
 }

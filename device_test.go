@@ -1,7 +1,10 @@
 package gadb
 
 import (
+	"os"
+	"strings"
 	"testing"
+	"time"
 )
 
 func TestDevice_State(t *testing.T) {
@@ -238,6 +241,61 @@ func TestDevice_EnableAdbOverTCP(t *testing.T) {
 	SetDebug(true)
 
 	err = dev.EnableAdbOverTCP()
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestDevice_List(t *testing.T) {
+	adbClient, err := NewClient()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	devices, err := adbClient.DeviceList()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	dev := devices[len(devices)-1]
+	dev = devices[0]
+
+	SetDebug(true)
+
+	// fileEntries, err := dev.List("/sdcard")
+	fileEntries, err := dev.List("/sdcard/Download")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for i := range fileEntries {
+		t.Log(fileEntries[i].Name, "\t", fileEntries[i].IsDir())
+	}
+}
+
+func TestDevice_Push(t *testing.T) {
+	adbClient, err := NewClient()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	devices, err := adbClient.DeviceList()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	dev := devices[len(devices)-1]
+	dev = devices[0]
+
+	SetDebug(true)
+
+	file, _ := os.Open("/Users/hero/Documents/temp/MuMu共享文件夹/test.txt")
+	err = dev.PushFile(file, "/sdcard/Download/push.txt", time.Now())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = dev.Push(strings.NewReader("world"), "/sdcard/Download/hello.txt", time.Now())
 	if err != nil {
 		t.Fatal(err)
 	}
