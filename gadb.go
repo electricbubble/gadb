@@ -13,5 +13,5 @@ func debugLog(msg string) {
 	if !debugFlag {
 		return
 	}
-	log.Println("[DEBUG] " + msg)
+	log.Println("[DEBUG] [gadb] " + msg)
 }

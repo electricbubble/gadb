@@ -5,6 +5,8 @@ import (
 )
 
 func TestClient_ServerVersion(t *testing.T) {
+	SetDebug(true)
+
 	adbClient, err := NewClient()
 	if err != nil {
 		t.Fatal(err)
@@ -19,6 +21,8 @@ func TestClient_ServerVersion(t *testing.T) {
 }
 
 func TestClient_DeviceSerialList(t *testing.T) {
+	SetDebug(true)
+
 	adbClient, err := NewClient()
 	if err != nil {
 		t.Fatal(err)
@@ -35,6 +39,8 @@ func TestClient_DeviceSerialList(t *testing.T) {
 }
 
 func TestClient_DeviceList(t *testing.T) {
+	SetDebug(true)
+
 	adbClient, err := NewClient()
 	if err != nil {
 		t.Fatal(err)
@@ -51,20 +57,26 @@ func TestClient_DeviceList(t *testing.T) {
 }
 
 func TestClient_ForwardList(t *testing.T) {
+	SetDebug(true)
+
 	adbClient, err := NewClient()
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	forwardList, err := adbClient.ForwardList()
+	deviceForwardList, err := adbClient.ForwardList()
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	t.Log("\n" + forwardList)
+	for i := range deviceForwardList {
+		t.Log(deviceForwardList[i])
+	}
 }
 
 func TestClient_ForwardKillAll(t *testing.T) {
+	SetDebug(true)
+
 	adbClient, err := NewClient()
 	if err != nil {
 		t.Fatal(err)
@@ -119,6 +131,8 @@ func TestClient_DisconnectAll(t *testing.T) {
 }
 
 func TestClient_KillServer(t *testing.T) {
+	SetDebug(true)
+
 	adbClient, err := NewClient()
 	if err != nil {
 		t.Fatal(err)

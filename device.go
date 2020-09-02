@@ -1,7 +1,6 @@
 package gadb
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"strings"
@@ -28,6 +27,14 @@ func deviceStateConv(k string) (deviceState DeviceState) {
 		return StateUnknown
 	}
 	return
+}
+
+type DeviceForward struct {
+	Serial string
+	Local  string
+	Remote string
+	// LocalProtocol string
+	// RemoteProtocol string
 }
 
 type Device struct {
@@ -57,7 +64,7 @@ func (d Device) DeviceInfo() map[string]string {
 }
 
 func (d Device) Serial() string {
-	// 	raw, err := d.adbClient.executeCommand(fmt.Sprintf("host-serial:%s:get-serialno", d.serial))
+	// 	resp, err := d.adbClient.executeCommand(fmt.Sprintf("host-serial:%s:get-serialno", d.serial))
 	return d.serial
 }
 
@@ -66,43 +73,44 @@ func (d Device) IsUsb() bool {
 }
 
 func (d Device) State() (DeviceState, error) {
-	raw, err := d.adbClient.executeCommand(fmt.Sprintf("host-serial:%s:get-state", d.serial))
-	return deviceStateConv(string(raw)), err
+	resp, err := d.adbClient.executeCommand(fmt.Sprintf("host-serial:%s:get-state", d.serial))
+	return deviceStateConv(resp), err
 }
 
 func (d Device) DevicePath() (string, error) {
-	raw, err := d.adbClient.executeCommand(fmt.Sprintf("host-serial:%s:get-devpath", d.serial))
-	return string(raw), err
+	resp, err := d.adbClient.executeCommand(fmt.Sprintf("host-serial:%s:get-devpath", d.serial))
+	return resp, err
 }
 
 func (d Device) Forward(localPort, remotePort int, noRebind ...bool) (err error) {
 	command := ""
 	local := fmt.Sprintf("tcp:%d", localPort)
 	remote := fmt.Sprintf("tcp:%d", remotePort)
+
 	if len(noRebind) != 0 && noRebind[0] {
 		command = fmt.Sprintf("host-serial:%s:forward:norebind:%s;%s", d.serial, local, remote)
 	} else {
 		command = fmt.Sprintf("host-serial:%s:forward:%s;%s", d.serial, local, remote)
 	}
+
 	_, err = d.adbClient.executeCommand(command, true)
 	return
 }
 
-func (d Device) ForwardList() (string, error) {
-	raw, err := d.adbClient.executeCommand(fmt.Sprintf("host-serial:%s:list-forward", d.serial))
-	lines := strings.Split(string(raw), "\n")
-	result := bytes.NewBufferString("")
-	for i := range lines {
-		line := lines[i]
-		if line == "" {
-			continue
-		}
-		field := strings.Fields(line)[0]
-		if field == d.serial {
-			result.WriteString(line)
+func (d Device) ForwardList() (deviceForwardList []DeviceForward, err error) {
+	var forwardList []DeviceForward
+	if forwardList, err = d.adbClient.ForwardList(); err != nil {
+		return nil, err
+	}
+
+	deviceForwardList = make([]DeviceForward, 0, len(deviceForwardList))
+	for i := range forwardList {
+		if forwardList[i].Serial == d.serial {
+			deviceForwardList = append(deviceForwardList, forwardList[i])
 		}
 	}
-	return result.String(), err
+	// resp, err := d.adbClient.executeCommand(fmt.Sprintf("host-serial:%s:list-forward", d.serial))
+	return
 }
 
 func (d Device) ForwardKill(localPort int) (err error) {
@@ -111,51 +119,20 @@ func (d Device) ForwardKill(localPort int) (err error) {
 	return
 }
 
-func (d Device) executeCommand(command string, onlyReadStatus ...bool) (raw []byte, err error) {
-	if len(onlyReadStatus) == 0 {
-		onlyReadStatus = []bool{false}
-	}
-
-	var transport Transport
-	if transport, err = newTransport(fmt.Sprintf("%s:%d", d.adbClient.host, d.adbClient.port)); err != nil {
-		return nil, err
-	}
-	defer func() { _ = transport.Close() }()
-
-	if err = transport.Send(fmt.Sprintf("host:transport:%s", d.serial)); err != nil {
-		return nil, err
-	}
-	if _, err = transport.ReadStatus(); err != nil {
-		return nil, err
-	}
-
-	if err = transport.Send(command); err != nil {
-		return nil, err
-	}
-
-	if onlyReadStatus[0] {
-		if _, err = transport.ReadStatus(); err != nil {
-			return nil, err
-		}
-		return
-	}
-
-	raw, err = transport.ReadAll()
-	return
+func (d Device) RunShellCommand(cmd string, args ...string) (string, error) {
+	raw, err := d.RunShellCommandWithBytes(cmd, args...)
+	return string(raw), err
 }
 
-func (d Device) RunShellCommand(cmd string, args ...string) (string, error) {
+func (d Device) RunShellCommandWithBytes(cmd string, args ...string) ([]byte, error) {
 	if len(args) > 0 {
 		cmd = fmt.Sprintf("%s %s", cmd, strings.Join(args, " "))
 	}
 	if strings.TrimSpace(cmd) == "" {
-		return "", errors.New("adb shell: command cannot be empty")
+		return nil, errors.New("adb shell: command cannot be empty")
 	}
 	raw, err := d.executeCommand(fmt.Sprintf("shell:%s", cmd))
-	if err != nil {
-		return "", err
-	}
-	return string(raw), nil
+	return raw, err
 }
 
 func (d Device) EnableAdbOverTCP(port ...int) (err error) {
@@ -164,6 +141,44 @@ func (d Device) EnableAdbOverTCP(port ...int) (err error) {
 	}
 
 	_, err = d.executeCommand(fmt.Sprintf("tcpip:%d", port[0]), true)
+	return
+}
 
+func (d Device) createDeviceTransport() (tp transport, err error) {
+	if tp, err = newTransport(fmt.Sprintf("%s:%d", d.adbClient.host, d.adbClient.port)); err != nil {
+		return transport{}, err
+	}
+
+	if err = tp.Send(fmt.Sprintf("host:transport:%s", d.serial)); err != nil {
+		return transport{}, err
+	}
+	err = tp.VerifyResponse()
+	return
+}
+
+func (d Device) executeCommand(command string, onlyVerifyResponse ...bool) (raw []byte, err error) {
+	if len(onlyVerifyResponse) == 0 {
+		onlyVerifyResponse = []bool{false}
+	}
+
+	var tp transport
+	if tp, err = d.createDeviceTransport(); err != nil {
+		return nil, err
+	}
+	defer func() { _ = tp.Close() }()
+
+	if err = tp.Send(command); err != nil {
+		return nil, err
+	}
+
+	if err = tp.VerifyResponse(); err != nil {
+		return nil, err
+	}
+
+	if onlyVerifyResponse[0] {
+		return
+	}
+
+	raw, err = tp.ReadBytesAll()
 	return
 }

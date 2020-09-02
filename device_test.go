@@ -152,6 +152,8 @@ func TestDevice_ForwardList(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	SetDebug(true)
+
 	for i := range devices {
 		dev := devices[i]
 		forwardList, err := dev.ForwardList()
@@ -192,19 +194,30 @@ func TestDevice_RunShellCommand(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// for i := range devices {
+	// 	dev := devices[i]
+	// 	// cmdOutput, err := dev.RunShellCommand(`pm list packages  | grep  "bili"`)
+	// 	// cmdOutput, err := dev.RunShellCommand(`pm list packages`, `| grep "bili"`)
+	// 	// cmdOutput, err := dev.RunShellCommand("dumpsys activity | grep mFocusedActivity")
+	// 	cmdOutput, err := dev.RunShellCommand("monkey", "-p", "tv.danmaku.bili", "-c", "android.intent.category.LAUNCHER", "1")
+	// 	if err != nil {
+	// 		t.Fatal(dev.serial, err)
+	// 	}
+	// 	t.Log("\n"+dev.serial, cmdOutput)
+	// }
+
 	// SetDebug(true)
 
-	for i := range devices {
-		dev := devices[i]
-		// cmdOutput, err := dev.RunShellCommand(`pm list packages  | grep  "bili"`)
-		// cmdOutput, err := dev.RunShellCommand(`pm list packages`, `| grep "bili"`)
-		// cmdOutput, err := dev.RunShellCommand("dumpsys activity | grep mFocusedActivity")
-		cmdOutput, err := dev.RunShellCommand("monkey", "-p", "tv.danmaku.bili", "-c", "android.intent.category.LAUNCHER", "1")
-		if err != nil {
-			t.Fatal(dev.serial, err)
-		}
-		t.Log("\n"+dev.serial, cmdOutput)
+	dev := devices[len(devices)-1]
+	dev = devices[0]
+
+	// cmdOutput, err := dev.RunShellCommand("monkey", "-p", "tv.danmaku.bili", "-c", "android.intent.category.LAUNCHER", "1")
+	cmdOutput, err := dev.RunShellCommand("ls /sdcard")
+	// cmdOutput, err := dev.RunShellCommandWithBytes("screencap -p")
+	if err != nil {
+		t.Fatal(dev.serial, err)
 	}
+	t.Log("\n⬇️"+dev.serial+"⬇️\n", cmdOutput)
 
 }
 
@@ -220,6 +233,7 @@ func TestDevice_EnableAdbOverTCP(t *testing.T) {
 	}
 
 	dev := devices[len(devices)-1]
+	dev = devices[0]
 
 	SetDebug(true)
 
