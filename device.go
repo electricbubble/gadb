@@ -276,3 +276,24 @@ func (d Device) Push(source io.Reader, remotePath string, modification time.Time
 	}
 	return
 }
+
+func (d Device) Pull(remotePath string, dest io.Writer) (err error) {
+	var tp transport
+	if tp, err = d.createDeviceTransport(); err != nil {
+		return err
+	}
+	defer func() { _ = tp.Close() }()
+
+	var sync syncTransport
+	if sync, err = tp.CreateSyncTransport(); err != nil {
+		return err
+	}
+	defer func() { _ = sync.Close() }()
+
+	if err = sync.Send("RECV", remotePath); err != nil {
+		return err
+	}
+
+	err = sync.WriteStream(dest)
+	return
+}

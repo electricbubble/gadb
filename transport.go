@@ -3,6 +3,7 @@ package gadb
 import (
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net"
 	"strconv"
@@ -118,10 +119,10 @@ func (t transport) CreateSyncTransport() (sTp syncTransport, err error) {
 	return
 }
 
-func _send(conn net.Conn, msg []byte) (err error) {
+func _send(writer io.Writer, msg []byte) (err error) {
 	for totalSent := 0; totalSent < len(msg); {
 		var sent int
-		if sent, err = conn.Write(msg[totalSent:]); err != nil {
+		if sent, err = writer.Write(msg[totalSent:]); err != nil {
 			return err
 		}
 		if sent == 0 {
@@ -132,12 +133,12 @@ func _send(conn net.Conn, msg []byte) (err error) {
 	return
 }
 
-func _readN(conn net.Conn, size int) (raw []byte, err error) {
+func _readN(reader io.Reader, size int) (raw []byte, err error) {
 	raw = make([]byte, 0, size)
 	for len(raw) < size {
 		buf := make([]byte, size-len(raw))
 		var n int
-		if n, err = conn.Read(buf); err != nil {
+		if n, err = io.ReadFull(reader, buf); err != nil {
 			return nil, err
 		}
 		if n == 0 {

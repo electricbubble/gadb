@@ -1,6 +1,8 @@
 package gadb
 
 import (
+	"bytes"
+	"io/ioutil"
 	"os"
 	"strings"
 	"testing"
@@ -297,6 +299,34 @@ func TestDevice_Push(t *testing.T) {
 
 	err = dev.Push(strings.NewReader("world"), "/sdcard/Download/hello.txt", time.Now())
 	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestDevice_Pull(t *testing.T) {
+	adbClient, err := NewClient()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	devices, err := adbClient.DeviceList()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	dev := devices[len(devices)-1]
+	dev = devices[0]
+
+	SetDebug(true)
+
+	buffer := bytes.NewBufferString("")
+	err = dev.Pull("/sdcard/Download/hello.txt", buffer)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	userHomeDir, _ := os.UserHomeDir()
+	if err = ioutil.WriteFile(userHomeDir+"/Desktop/hello.txt", buffer.Bytes(), DefaultFileMode); err != nil {
 		t.Fatal(err)
 	}
 }
