@@ -1,13 +1,3 @@
-# gadb
-ADB Client in pure Golang.
-
-## Installation
-```shell script
-go get github.com/electricbubble/gadb
-```
-
-## Example
-```go
 package main
 
 import (
@@ -66,18 +56,3 @@ func checkErr(err error, msg ...string) {
 	output += err.Error()
 	log.Fatalln(output)
 }
-
-```
-
-## Thanks
-
-Thank you [JetBrains](https://www.jetbrains.com/?from=gwda) for providing free open source licenses
-
----
-
-Repository|Description
----|---
-[zach-klippenstein/goadb](https://github.com/zach-klippenstein/goadb)|A Golang library for interacting with adb.
-[vidstige/jadb](https://github.com/vidstige/jadb)|ADB Client in pure Java.
-[Swind/pure-python-adb](https://github.com/Swind/pure-python-adb)|This is pure-python implementation of the ADB client.
-[codeskyblue/fa](https://github.com/codeskyblue/fa)|FA(fast adb) helps you win at ADB(Android Debug Bridge).
