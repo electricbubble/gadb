@@ -12,7 +12,7 @@ import (
 
 var ErrConnBroken = errors.New("socket connection broken")
 
-var DefaultAdbReadTimeout time.Duration = 10
+var DefaultAdbReadTimeout time.Duration = 60
 
 type transport struct {
 	sock        net.Conn
