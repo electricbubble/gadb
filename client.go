@@ -77,6 +77,7 @@ func (c Client) DeviceList() (devices []Device, err error) {
 
 	lines := strings.Split(resp, "\n")
 	devices = make([]Device, 0, len(lines))
+	unauthorizedDevices := []string{}
 
 	for i := range lines {
 		line := strings.TrimSpace(lines[i])
@@ -85,6 +86,12 @@ func (c Client) DeviceList() (devices []Device, err error) {
 		}
 
 		fields := strings.Fields(line)
+
+		if len(fields) == 3 {
+			unauthorizedDevices = append(unauthorizedDevices, fields[0]+" - "+fields[1])
+			continue
+		}
+
 		if len(fields) < 5 || len(fields[0]) == 0 {
 			debugLog(fmt.Sprintf("can't parse: %s", line))
 			continue
@@ -98,6 +105,14 @@ func (c Client) DeviceList() (devices []Device, err error) {
 			mapAttrs[key] = val
 		}
 		devices = append(devices, Device{adbClient: c, serial: fields[0], attrs: mapAttrs})
+	}
+
+	if len(unauthorizedDevices) > 0 {
+		fmt.Println("Unauthorized devices:")
+		for i := 0; i < len(unauthorizedDevices); i++ {
+			fmt.Println(unauthorizedDevices[i])
+		}
+		fmt.Println("")
 	}
 
 	return
