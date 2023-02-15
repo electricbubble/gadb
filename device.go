@@ -27,14 +27,16 @@ type DeviceState string
 const (
 	StateUnknown      DeviceState = "UNKNOWN"
 	StateOnline       DeviceState = "online"
+	StateRecovery     DeviceState = "recovery"
 	StateOffline      DeviceState = "offline"
 	StateDisconnected DeviceState = "disconnected"
 )
 
 var deviceStateStrings = map[string]DeviceState{
-	"":        StateDisconnected,
-	"offline": StateOffline,
-	"device":  StateOnline,
+	"":         StateDisconnected,
+	"offline":  StateOffline,
+	"device":   StateOnline,
+	"recovery": StateRecovery,
 }
 
 func deviceStateConv(k string) (deviceState DeviceState) {
