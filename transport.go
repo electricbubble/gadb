@@ -12,7 +12,7 @@ import (
 
 var ErrConnBroken = errors.New("socket connection broken")
 
-var DefaultAdbReadTimeout time.Duration = 60
+var DefaultAdbReadTimeout time.Duration = 60 * time.Second
 
 type transport struct {
 	sock        net.Conn
@@ -97,7 +97,7 @@ func (t transport) ReadStringN(size int) (s string, err error) {
 }
 
 func (t transport) ReadBytesN(size int) (raw []byte, err error) {
-	_ = t.sock.SetReadDeadline(time.Now().Add(time.Second * t.readTimeout))
+	_ = t.sock.SetReadDeadline(time.Now().Add(t.readTimeout))
 	return _readN(t.sock, size)
 }
 
