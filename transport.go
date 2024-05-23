@@ -12,7 +12,7 @@ import (
 
 var ErrConnBroken = errors.New("socket connection broken")
 
-var DefaultAdbReadTimeout time.Duration = 60
+var DefaultAdbReadTimeout time.Duration = 60 * time.Second
 
 type transport struct {
 	sock        net.Conn
@@ -97,7 +97,7 @@ func (t transport) ReadStringN(size int) (s string, err error) {
 }
 
 func (t transport) ReadBytesN(size int) (raw []byte, err error) {
-	_ = t.sock.SetReadDeadline(time.Now().Add(time.Second * t.readTimeout))
+	_ = t.sock.SetReadDeadline(time.Now().Add(t.readTimeout))
 	return _readN(t.sock, size)
 }
 
@@ -116,6 +116,12 @@ func (t transport) CreateSyncTransport() (sTp syncTransport, err error) {
 		return syncTransport{}, err
 	}
 	sTp = newSyncTransport(t.sock, t.readTimeout)
+	return
+}
+
+// CreateShellTransport returns a transport useful for the shell protocol.
+func (t transport) CreateShellTransport() (sTp shellTransport, err error) {
+	sTp = newShellTransport(t.sock, t.readTimeout)
 	return
 }
 
