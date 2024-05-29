@@ -85,7 +85,7 @@ func (c Client) DeviceList() (devices []Device, err error) {
 		}
 
 		fields := strings.Fields(line)
-		if len(fields) < 4 || len(fields[0]) == 0 {
+		if len(fields) < 3 || len(fields[0]) == 0 {
 			debugLog(fmt.Sprintf("can't parse: %s", line))
 			continue
 		}
