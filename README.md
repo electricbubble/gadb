@@ -75,9 +75,12 @@ Thank you [JetBrains](https://www.jetbrains.com/?from=gwda) for providing free o
 
 ---
 
+Similar projects:
+
 Repository|Description
 ---|---
 [zach-klippenstein/goadb](https://github.com/zach-klippenstein/goadb)|A Golang library for interacting with adb.
 [vidstige/jadb](https://github.com/vidstige/jadb)|ADB Client in pure Java.
 [Swind/pure-python-adb](https://github.com/Swind/pure-python-adb)|This is pure-python implementation of the ADB client.
 [codeskyblue/fa](https://github.com/codeskyblue/fa)|FA(fast adb) helps you win at ADB(Android Debug Bridge).
+[mobile-dev-inc/dadb](https://github.com/mobile-dev-inc/dadb)|Connect directly to `adbd` without ADB binary or ADB server (Kotlin)
