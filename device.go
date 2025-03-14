@@ -1,6 +1,7 @@
 package gadb
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -318,4 +319,42 @@ func (d Device) Pull(remotePath string, dest io.Writer) (err error) {
 
 	err = sync.WriteStream(dest)
 	return
+}
+
+func (d Device) Logcat(dst io.Writer, exitChan chan bool) error {
+	var tp transport
+	var err error
+	if tp, err = d.createDeviceTransport(); err != nil {
+		return err
+	}
+	defer func() { _ = tp.Close() }()
+
+	if err = tp.Send("shell:logcat"); err != nil {
+		return err
+	}
+	if err = tp.VerifyResponse(); err != nil {
+		return err
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		r := NewReader(ctx, tp.sock)
+		io.Copy(dst, r)
+	}()
+	<-exitChan
+	cancel()
+	return err
+}
+
+func (d Device) Logcat2File(file string, exitChan chan bool) error {
+	f, err := os.OpenFile(file, os.O_WRONLY|os.O_CREATE|os.O_SYNC|os.O_APPEND, 0755)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	return d.Logcat(f, exitChan)
+}
+
+func (d Device) LogcatClear() error {
+	_, err := d.executeCommand("shell:logcat -c")
+	return err
 }
